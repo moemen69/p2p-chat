@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Burn-After-Reading P2P Chat</title>
+    <title>Secure P2P Chat | Burn After Reading</title>
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
     <style>
+        /* Dark Mode UI matching premium aesthetic */
         body { 
             font-family: 'Inter', system-ui, sans-serif; 
             background: #050510; /* Deep Space Black */
@@ -32,6 +33,10 @@
             width: 100%; 
             box-sizing: border-box; 
             border-radius: 6px;
+            outline: none;
+        }
+        input:focus {
+            border-color: #da21ff; /* Hot Magenta */
         }
         button { 
             background: #8B5CF6; 
@@ -40,10 +45,12 @@
             font-weight: bold; 
             transition: 0.2s ease;
         }
-        button:hover { background: #da21ff; /* Hot Magenta */ border-color: #da21ff; }
+        button:hover { background: #da21ff; border-color: #da21ff; }
         
         #chat-box { 
             min-height: 250px; 
+            max-height: 400px;
+            overflow-y: auto;
             border: 1px solid rgba(255, 255, 255, 0.1); 
             background: rgba(0,0,0,0.3);
             padding: 15px; 
@@ -80,6 +87,7 @@
             border: 1px dashed #da21ff;
             text-align: center;
             font-weight: bold;
+            user-select: none;
         }
         .hidden-msg:hover {
             background: rgba(218, 33, 255, 0.1);
@@ -92,49 +100,63 @@
 
     <div class="box">
         <h3>1. Your Identity</h3>
-        <p>Your Random ID: <strong id="my-id" style="color: #da21ff;">Generating...</strong></p>
-        <p style="font-size: 0.85em; color: #888;">Share this ID with the other device to establish a direct P2P connection.</p>
+        <p>Your Random ID: <strong id="my-id" style="color: #da21ff; letter-spacing: 1px;">Generating...</strong></p>
+        <p style="font-size: 0.85em; color: #888;">Share this ID with your friend so they can connect to you.</p>
     </div>
 
     <div class="box">
-        <h3>2. Connect to Peer</h3>
-        <input type="text" id="peer-id-input" placeholder="Paste the other device's ID here...">
-        <button onclick="connectToPeer()">Establish Connection</button>
-        <p id="connection-status" style="font-weight: bold; color: #888;">Status: Disconnected</p>
+        <h3>2. Connect to Friend</h3>
+        <input type="text" id="peer-id-input" placeholder="Paste your friend's ID here...">
+        <button onclick="connectToPeer()">Establish Secure Connection</button>
+        <p id="connection-status" style="font-weight: bold; color: #888; margin-bottom: 0;">Status: Disconnected</p>
     </div>
 
     <div class="box">
-        <h3>3. Secure Chat</h3>
-        <input type="text" id="msg-input" placeholder="Type a secret message...">
-        <button onclick="sendMessage()">Send Secure Message</button>
+        <h3>3. Secret Chat</h3>
+        <input type="text" id="msg-input" placeholder="Type a message to self-destruct..." onkeypress="handleKeyPress(event)">
+        <button onclick="sendMessage()">Send Message</button>
         
         <div id="chat-box"></div>
     </div>
 
     <script>
-        // 1. Initialize PeerJS (Generates random ID automatically via public signaling server)
-        const peer = new Peer(); 
-        let conn; // Variable to hold the active connection
+        // 1. Initialize PeerJS with public STUN servers to bypass 4G/WiFi routers
+        const peer = new Peer({
+            config: {
+                'iceServers': [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun.services.mozilla.com' }
+                ]
+            }
+        }); 
+
+        let conn; // Holds the active connection
 
         const chatBox = document.getElementById('chat-box');
         const statusText = document.getElementById('connection-status');
 
-        // When Peer is ready, display the ID
+        // When Peer is ready, display the random ID
         peer.on('open', (id) => {
             document.getElementById('my-id').innerText = id;
         });
 
-        // 2. Listen for incoming connections (If the other device connects to you)
+        // 2. Listen for incoming connections (If your friend pastes YOUR id)
         peer.on('connection', (connection) => {
             conn = connection;
             setupConnection();
         });
 
-        // 3. Connect to someone else (If you initiate the connection)
+        // 3. Connect to someone else (If YOU paste their ID)
         function connectToPeer() {
-            const peerId = document.getElementById('peer-id-input').value;
+            const peerId = document.getElementById('peer-id-input').value.trim();
             if (!peerId) return alert("Please enter a valid ID.");
-            conn = peer.connect(peerId);
+            
+            statusText.innerText = "Status: Negotiating connection...";
+            statusText.style.color = "#da21ff";
+            
+            conn = peer.connect(peerId, { reliable: true });
             setupConnection();
         }
 
@@ -149,14 +171,26 @@
             conn.on('data', (data) => {
                 displayReceivedMessage(data);
             });
+            
+            conn.on('close', () => {
+                statusText.innerText = "Status: Disconnected";
+                statusText.style.color = "#ff4444";
+            });
+        }
+
+        // Allow sending message with 'Enter' key
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
         }
 
         // 5. Send a message to the other device
         function sendMessage() {
             if (!conn || !conn.open) return alert("You are not connected to anyone!");
             const msgInput = document.getElementById('msg-input');
-            const msg = msgInput.value;
-            if (msg.trim() === "") return;
+            const msg = msgInput.value.trim();
+            if (msg === "") return;
             
             conn.send(msg); // Send directly to peer over WebRTC
             
@@ -195,9 +229,10 @@
                 
                 // 3. Once tapped, a 5-second Javascript timer starts
                 setTimeout(() => {
-                    // 4. deletes it completely from the DOM (the webpage's memory)
+                    // 4. Deletes it completely from the DOM
                     if (document.body.contains(msgContainer)) {
-                        msgContainer.remove(); 
+                        msgContainer.style.opacity = '0';
+                        setTimeout(() => msgContainer.remove(), 300); // smooth fade out before DOM removal
                     }
                 }, 5000);
                 
