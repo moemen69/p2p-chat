@@ -3,101 +3,230 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rapid Secure P2P Chat</title>
+    <title>Rapid P2P | Secure Room</title>
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
     <style>
-        body { font-family: 'Inter', system-ui, sans-serif; background: #050510; color: #e0e0e0; padding: 20px; max-width: 600px; margin: 0 auto; }
-        .box { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; margin-bottom: 20px; border-radius: 12px; }
-        h3 { margin-top: 0; color: #8B5CF6; }
-        input, button { background: rgba(0, 0, 0, 0.5); color: #fff; border: 1px solid #8B5CF6; padding: 12px; margin: 5px 0; width: 100%; box-sizing: border-box; border-radius: 6px; outline: none; }
-        input:focus { border-color: #da21ff; }
-        button { background: #8B5CF6; color: #fff; cursor: pointer; font-weight: bold; transition: 0.2s ease; }
-        button:hover { background: #da21ff; border-color: #da21ff; }
-        #chat-box { min-height: 250px; max-height: 400px; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(0,0,0,0.3); padding: 15px; margin-top: 15px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; }
-        .message { padding: 12px 16px; border-radius: 8px; animation: fadeIn 0.2s ease-out; max-width: 80%; word-wrap: break-word; }
-        .sent { background: #8B5CF6; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .received { background: #2a2a35; color: white; align-self: flex-start; border-bottom-left-radius: 2px; }
-        .hidden-msg { background: #1a1a24; color: #da21ff; cursor: pointer; border: 1px dashed #da21ff; text-align: center; font-weight: bold; user-select: none; }
+        /* Premium Dark Mode & Glassmorphism UI */
+        body { 
+            font-family: 'Inter', system-ui, sans-serif; 
+            background: #050510; 
+            color: #e0e0e0; 
+            padding: 20px; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-image: radial-gradient(circle at 50% -20%, rgba(139, 92, 246, 0.15), transparent 60%);
+        }
+        .box { 
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+        h3 { margin-top: 0; color: #8B5CF6; font-weight: 600; letter-spacing: 0.5px; }
+        p { color: #a0a0b0; font-size: 0.9em; line-height: 1.4; }
+        
+        input, button { 
+            background: rgba(0, 0, 0, 0.4); 
+            color: #fff; 
+            border: 1px solid #8B5CF6; 
+            padding: 14px; 
+            margin: 8px 0; 
+            width: 100%; 
+            box-sizing: border-box; 
+            border-radius: 8px; 
+            outline: none;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        input:focus { 
+            border-color: #da21ff; 
+            box-shadow: 0 0 10px rgba(218, 33, 255, 0.2); 
+        }
+        button { 
+            background: linear-gradient(135deg, #8B5CF6, #da21ff);
+            border: none;
+            color: #fff;
+            cursor: pointer; 
+            font-weight: bold; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        button:hover { 
+            box-shadow: 0 0 15px rgba(218, 33, 255, 0.4); 
+            transform: translateY(-1px);
+        }
+        
+        #chat-box { 
+            height: 300px; 
+            overflow-y: auto; 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+            background: rgba(0,0,0,0.5);
+            padding: 15px; 
+            margin-top: 15px; 
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .message { 
+            padding: 12px 18px; 
+            border-radius: 12px; 
+            animation: fadeIn 0.2s ease-out; 
+            max-width: 80%;
+            word-wrap: break-word;
+            font-size: 0.95em;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .sent { 
+            background: #8B5CF6; 
+            color: white; 
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+        .received { 
+            background: #1e1e28; 
+            color: white; 
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .hidden-msg { 
+            background: rgba(218, 33, 255, 0.1); 
+            color: #da21ff;
+            cursor: pointer; 
+            border: 1px dashed #da21ff;
+            text-align: center;
+            font-weight: bold;
+            user-select: none;
+        }
+        .hidden-msg:hover { background: rgba(218, 33, 255, 0.2); }
+        
+        #connection-status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.1);
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #8B5CF6; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="box">
-        <h3>1. Your Identity</h3>
-        <p>Your ID: <strong id="my-id" style="color: #da21ff; letter-spacing: 1px;">Generating...</strong></p>
+    <div class="box" id="setup-panel">
+        <h3>Connect to a Room</h3>
+        <p>Agree on a secret room code with your friend (e.g., "redix99"). Type it below to instantly establish a P2P bridge.</p>
+        <input type="text" id="room-input" placeholder="Enter Secret Room Code...">
+        <button onclick="joinOrCreateRoom()">Enter Room</button>
+        <div style="text-align: center;">
+            <span id="connection-status" style="color: #a0a0b0;">Status: Awaiting Code</span>
+        </div>
     </div>
 
-    <div class="box">
-        <h3>2. Connect</h3>
-        <input type="text" id="peer-id-input" placeholder="Paste friend's ID here...">
-        <button onclick="connectToPeer()">Fast Connect</button>
-        <p id="connection-status" style="font-weight: bold; color: #888; margin-bottom: 0;">Status: Disconnected</p>
-    </div>
-
-    <div class="box">
-        <h3>3. Secure Chat</h3>
-        <input type="text" id="msg-input" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
-        <button onclick="sendMessage()">Send</button>
+    <div class="box" id="chat-panel" style="opacity: 0.5; pointer-events: none;">
+        <h3>Secure Comm Link</h3>
+        <input type="text" id="msg-input" placeholder="Type a message to self-destruct..." onkeypress="handleKeyPress(event)">
+        <button onclick="sendMessage()">Send Encrypted</button>
         <div id="chat-box"></div>
     </div>
 
     <script>
-        // OPTIMIZATION 1: Single, fast STUN server to speed up network discovery
-        const peer = new Peer({
-            config: {
-                'iceServers': [
-                    { urls: 'stun:stun.l.google.com:19302' }
-                ]
-            },
-            debug: 0 // Turn off debugging to save microscopic processing time
-        }); 
+        // High-speed Google STUN configuration
+        const stunConfig = {
+            'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }]
+        };
 
+        let peer;
         let conn;
         const chatBox = document.getElementById('chat-box');
         const statusText = document.getElementById('connection-status');
+        const chatPanel = document.getElementById('chat-panel');
+        const setupPanel = document.getElementById('setup-panel');
+        
+        // Security Prefix to ensure your room names don't clash with other developers using PeerJS
+        const APP_PREFIX = "p2p-secure-v1-"; 
 
-        peer.on('open', (id) => {
-            document.getElementById('my-id').innerText = id;
-        });
-
-        peer.on('connection', (connection) => {
-            conn = connection;
-            setupConnection();
-        });
-
-        function connectToPeer() {
-            const peerId = document.getElementById('peer-id-input').value.trim();
-            if (!peerId) return alert("Please enter an ID.");
+        function joinOrCreateRoom() {
+            const code = document.getElementById('room-input').value.trim();
+            if (!code) return alert("Please enter a room code.");
             
-            statusText.innerText = "Status: Connecting...";
+            const targetRoomId = APP_PREFIX + code;
+            
+            statusText.innerText = "Status: Searching for room...";
             statusText.style.color = "#da21ff";
             
-            // OPTIMIZATION 2: Removed { reliable: true } for faster initial handshake
-            conn = peer.connect(peerId);
-            
-            // Failsafe timeout if it hangs for more than 10 seconds
-            setTimeout(() => {
-                if(conn && !conn.open) {
-                    statusText.innerText = "Connection failed. Networks might be too strict.";
-                    statusText.style.color = "#ff4444";
-                }
-            }, 10000);
+            // 1. Create a random temporary peer to search for the room
+            peer = new Peer({ config: stunConfig, debug: 0 });
 
-            setupConnection();
+            peer.on('open', () => {
+                // 2. Try to connect to the target room
+                conn = peer.connect(targetRoomId);
+
+                conn.on('open', () => {
+                    // Success! The other person created the room first. We are joining them.
+                    activateChatUI("Connected to Friend!");
+                    setupConnection();
+                });
+
+                // 3. If the room doesn't exist, we get an error
+                peer.on('error', (err) => {
+                    if (err.type === 'peer-unavailable') {
+                        // The room doesn't exist. WE must create it and wait.
+                        statusText.innerText = "Status: Room Created. Waiting for friend...";
+                        statusText.style.color = "#8B5CF6";
+                        
+                        peer.destroy(); // Destroy temporary peer
+                        
+                        setTimeout(() => {
+                            // Create the permanent room host peer
+                            peer = new Peer(targetRoomId, { config: stunConfig, debug: 0 });
+                            
+                            peer.on('open', () => {
+                                console.log("Hosting room: " + code);
+                            });
+
+                            peer.on('connection', (connection) => {
+                                // Friend finally joined us!
+                                conn = connection;
+                                activateChatUI("Friend Joined the Room!");
+                                setupConnection();
+                            });
+                        }, 500); // slight delay to ensure clean port switch
+                    }
+                });
+            });
         }
 
         function setupConnection() {
-            conn.on('open', () => {
-                statusText.innerText = "Status: Connected!";
-                statusText.style.color = "#00ffcc";
-            });
-
             conn.on('data', (data) => { displayReceivedMessage(data); });
+            
             conn.on('close', () => {
-                statusText.innerText = "Status: Disconnected";
+                statusText.innerText = "Status: Friend Disconnected";
                 statusText.style.color = "#ff4444";
+                chatPanel.style.opacity = '0.5';
+                chatPanel.style.pointerEvents = 'none';
             });
+        }
+        
+        function activateChatUI(msg) {
+            statusText.innerText = "Status: " + msg;
+            statusText.style.color = "#00ffcc";
+            chatPanel.style.opacity = '1';
+            chatPanel.style.pointerEvents = 'auto';
+            setupPanel.style.display = 'none'; // Hide setup once connected
         }
 
         function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
@@ -116,14 +245,22 @@
             chatBox.appendChild(msgElement);
             msgInput.value = ''; 
 
-            setTimeout(() => { if (document.body.contains(msgElement)) msgElement.remove(); }, 3000);
+            setTimeout(() => { 
+                if (document.body.contains(msgElement)) {
+                    msgElement.style.opacity = '0';
+                    msgElement.style.transform = 'translateY(5px)';
+                    msgElement.style.transition = 'all 0.3s ease';
+                    setTimeout(() => msgElement.remove(), 300);
+                } 
+            }, 3000);
+            
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         function displayReceivedMessage(msg) {
             const msgContainer = document.createElement('div');
             msgContainer.className = 'message received hidden-msg';
-            msgContainer.innerText = "🔒 Locked. Tap to read.";
+            msgContainer.innerText = "🔒 Locked. Tap to decrypt.";
             
             msgContainer.onclick = function() {
                 msgContainer.innerText = msg;
@@ -133,7 +270,9 @@
                 setTimeout(() => {
                     if (document.body.contains(msgContainer)) {
                         msgContainer.style.opacity = '0';
-                        setTimeout(() => msgContainer.remove(), 200); 
+                        msgContainer.style.transform = 'translateY(5px)';
+                        msgContainer.style.transition = 'all 0.3s ease';
+                        setTimeout(() => msgContainer.remove(), 300); 
                     }
                 }, 5000);
                 
