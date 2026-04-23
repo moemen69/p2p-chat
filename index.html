@@ -3,96 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure P2P Chat | Burn After Reading</title>
+    <title>Rapid Secure P2P Chat</title>
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
     <style>
-        /* Dark Mode UI matching premium aesthetic */
-        body { 
-            font-family: 'Inter', system-ui, sans-serif; 
-            background: #050510; /* Deep Space Black */
-            color: #e0e0e0; 
-            padding: 20px; 
-            max-width: 600px; 
-            margin: 0 auto; 
-        }
-        .box { 
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            padding: 20px; 
-            margin-bottom: 20px; 
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
-        }
-        h3 { margin-top: 0; color: #8B5CF6; /* Primary Purple */ }
-        input, button { 
-            background: rgba(0, 0, 0, 0.5); 
-            color: #fff; 
-            border: 1px solid #8B5CF6; 
-            padding: 12px; 
-            margin: 5px 0; 
-            width: 100%; 
-            box-sizing: border-box; 
-            border-radius: 6px;
-            outline: none;
-        }
-        input:focus {
-            border-color: #da21ff; /* Hot Magenta */
-        }
-        button { 
-            background: #8B5CF6; 
-            color: #fff;
-            cursor: pointer; 
-            font-weight: bold; 
-            transition: 0.2s ease;
-        }
+        body { font-family: 'Inter', system-ui, sans-serif; background: #050510; color: #e0e0e0; padding: 20px; max-width: 600px; margin: 0 auto; }
+        .box { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; margin-bottom: 20px; border-radius: 12px; }
+        h3 { margin-top: 0; color: #8B5CF6; }
+        input, button { background: rgba(0, 0, 0, 0.5); color: #fff; border: 1px solid #8B5CF6; padding: 12px; margin: 5px 0; width: 100%; box-sizing: border-box; border-radius: 6px; outline: none; }
+        input:focus { border-color: #da21ff; }
+        button { background: #8B5CF6; color: #fff; cursor: pointer; font-weight: bold; transition: 0.2s ease; }
         button:hover { background: #da21ff; border-color: #da21ff; }
-        
-        #chat-box { 
-            min-height: 250px; 
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            background: rgba(0,0,0,0.3);
-            padding: 15px; 
-            margin-top: 15px; 
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .message { 
-            padding: 12px 16px; 
-            border-radius: 8px; 
-            animation: fadeIn 0.3s ease-out; 
-            max-width: 80%;
-            word-wrap: break-word;
-        }
-        .sent { 
-            background: #8B5CF6; 
-            color: white; 
-            align-self: flex-end;
-            border-bottom-right-radius: 2px;
-        }
-        .received { 
-            background: #2a2a35; 
-            color: white; 
-            align-self: flex-start;
-            border-bottom-left-radius: 2px;
-        }
-        .hidden-msg { 
-            background: #1a1a24; 
-            color: #da21ff;
-            cursor: pointer; 
-            border: 1px dashed #da21ff;
-            text-align: center;
-            font-weight: bold;
-            user-select: none;
-        }
-        .hidden-msg:hover {
-            background: rgba(218, 33, 255, 0.1);
-        }
-        
+        #chat-box { min-height: 250px; max-height: 400px; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(0,0,0,0.3); padding: 15px; margin-top: 15px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; }
+        .message { padding: 12px 16px; border-radius: 8px; animation: fadeIn 0.2s ease-out; max-width: 80%; word-wrap: break-word; }
+        .sent { background: #8B5CF6; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .received { background: #2a2a35; color: white; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .hidden-msg { background: #1a1a24; color: #da21ff; cursor: pointer; border: 1px dashed #da21ff; text-align: center; font-weight: bold; user-select: none; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -100,143 +25,118 @@
 
     <div class="box">
         <h3>1. Your Identity</h3>
-        <p>Your Random ID: <strong id="my-id" style="color: #da21ff; letter-spacing: 1px;">Generating...</strong></p>
-        <p style="font-size: 0.85em; color: #888;">Share this ID with your friend so they can connect to you.</p>
+        <p>Your ID: <strong id="my-id" style="color: #da21ff; letter-spacing: 1px;">Generating...</strong></p>
     </div>
 
     <div class="box">
-        <h3>2. Connect to Friend</h3>
-        <input type="text" id="peer-id-input" placeholder="Paste your friend's ID here...">
-        <button onclick="connectToPeer()">Establish Secure Connection</button>
+        <h3>2. Connect</h3>
+        <input type="text" id="peer-id-input" placeholder="Paste friend's ID here...">
+        <button onclick="connectToPeer()">Fast Connect</button>
         <p id="connection-status" style="font-weight: bold; color: #888; margin-bottom: 0;">Status: Disconnected</p>
     </div>
 
     <div class="box">
-        <h3>3. Secret Chat</h3>
-        <input type="text" id="msg-input" placeholder="Type a message to self-destruct..." onkeypress="handleKeyPress(event)">
-        <button onclick="sendMessage()">Send Message</button>
-        
+        <h3>3. Secure Chat</h3>
+        <input type="text" id="msg-input" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+        <button onclick="sendMessage()">Send</button>
         <div id="chat-box"></div>
     </div>
 
     <script>
-        // 1. Initialize PeerJS with public STUN servers to bypass 4G/WiFi routers
+        // OPTIMIZATION 1: Single, fast STUN server to speed up network discovery
         const peer = new Peer({
             config: {
                 'iceServers': [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun.services.mozilla.com' }
+                    { urls: 'stun:stun.l.google.com:19302' }
                 ]
-            }
+            },
+            debug: 0 // Turn off debugging to save microscopic processing time
         }); 
 
-        let conn; // Holds the active connection
-
+        let conn;
         const chatBox = document.getElementById('chat-box');
         const statusText = document.getElementById('connection-status');
 
-        // When Peer is ready, display the random ID
         peer.on('open', (id) => {
             document.getElementById('my-id').innerText = id;
         });
 
-        // 2. Listen for incoming connections (If your friend pastes YOUR id)
         peer.on('connection', (connection) => {
             conn = connection;
             setupConnection();
         });
 
-        // 3. Connect to someone else (If YOU paste their ID)
         function connectToPeer() {
             const peerId = document.getElementById('peer-id-input').value.trim();
-            if (!peerId) return alert("Please enter a valid ID.");
+            if (!peerId) return alert("Please enter an ID.");
             
-            statusText.innerText = "Status: Negotiating connection...";
+            statusText.innerText = "Status: Connecting...";
             statusText.style.color = "#da21ff";
             
-            conn = peer.connect(peerId, { reliable: true });
+            // OPTIMIZATION 2: Removed { reliable: true } for faster initial handshake
+            conn = peer.connect(peerId);
+            
+            // Failsafe timeout if it hangs for more than 10 seconds
+            setTimeout(() => {
+                if(conn && !conn.open) {
+                    statusText.innerText = "Connection failed. Networks might be too strict.";
+                    statusText.style.color = "#ff4444";
+                }
+            }, 10000);
+
             setupConnection();
         }
 
-        // 4. Handle the active connection data flow
         function setupConnection() {
             conn.on('open', () => {
-                statusText.innerText = "Status: Connected Securely!";
+                statusText.innerText = "Status: Connected!";
                 statusText.style.color = "#00ffcc";
             });
 
-            // Triggered when a message arrives from the other device
-            conn.on('data', (data) => {
-                displayReceivedMessage(data);
-            });
-            
+            conn.on('data', (data) => { displayReceivedMessage(data); });
             conn.on('close', () => {
                 statusText.innerText = "Status: Disconnected";
                 statusText.style.color = "#ff4444";
             });
         }
 
-        // Allow sending message with 'Enter' key
-        function handleKeyPress(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        }
+        function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
 
-        // 5. Send a message to the other device
         function sendMessage() {
-            if (!conn || !conn.open) return alert("You are not connected to anyone!");
+            if (!conn || !conn.open) return;
             const msgInput = document.getElementById('msg-input');
             const msg = msgInput.value.trim();
             if (msg === "") return;
             
-            conn.send(msg); // Send directly to peer over WebRTC
+            conn.send(msg); 
             
-            // Show on our screen briefly, then delete
             const msgElement = document.createElement('div');
             msgElement.className = 'message sent';
             msgElement.innerText = msg;
             chatBox.appendChild(msgElement);
-            
-            msgInput.value = ''; // Clear input
+            msgInput.value = ''; 
 
-            // Auto-delete our own sent message after 3 seconds
-            setTimeout(() => { 
-                if (document.body.contains(msgElement)) {
-                    msgElement.remove(); 
-                }
-            }, 3000);
-            
-            // Auto-scroll to bottom
+            setTimeout(() => { if (document.body.contains(msgElement)) msgElement.remove(); }, 3000);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        // 6. EXACT BURN-AFTER-READING LOGIC
         function displayReceivedMessage(msg) {
-            // 1. Message arrives locked
             const msgContainer = document.createElement('div');
             msgContainer.className = 'message received hidden-msg';
-            msgContainer.innerText = "🔒 Locked Message. Tap to read.";
+            msgContainer.innerText = "🔒 Locked. Tap to read.";
             
-            // 2. The user must tap it to read it
             msgContainer.onclick = function() {
-                // Reveal the actual message text
                 msgContainer.innerText = msg;
                 msgContainer.classList.remove('hidden-msg');
                 msgContainer.style.cursor = 'default';
                 
-                // 3. Once tapped, a 5-second Javascript timer starts
                 setTimeout(() => {
-                    // 4. Deletes it completely from the DOM
                     if (document.body.contains(msgContainer)) {
                         msgContainer.style.opacity = '0';
-                        setTimeout(() => msgContainer.remove(), 300); // smooth fade out before DOM removal
+                        setTimeout(() => msgContainer.remove(), 200); 
                     }
                 }, 5000);
                 
-                // Prevent clicking again to restart the timer
                 msgContainer.onclick = null; 
             };
 
