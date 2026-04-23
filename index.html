@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rapid P2P | Secure Room</title>
+    <title>Secure P2P Group Chat</title>
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
     <style>
         /* Premium Dark Mode & Glassmorphism UI */
@@ -23,228 +23,250 @@
             margin-bottom: 20px; 
             border-radius: 16px;
             backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
         }
-        h3 { margin-top: 0; color: #8B5CF6; font-weight: 600; letter-spacing: 0.5px; }
+        h3 { margin-top: 0; color: #8B5CF6; font-weight: 600; border-bottom: 1px solid rgba(139, 92, 246, 0.3); padding-bottom: 10px;}
         p { color: #a0a0b0; font-size: 0.9em; line-height: 1.4; }
         
-        input, button { 
+        input, select, button { 
             background: rgba(0, 0, 0, 0.4); 
             color: #fff; 
             border: 1px solid #8B5CF6; 
-            padding: 14px; 
+            padding: 12px; 
             margin: 8px 0; 
             width: 100%; 
             box-sizing: border-box; 
             border-radius: 8px; 
             outline: none;
-            font-size: 1em;
             transition: all 0.3s ease;
         }
-        input:focus { 
-            border-color: #da21ff; 
-            box-shadow: 0 0 10px rgba(218, 33, 255, 0.2); 
-        }
+        input:focus, select:focus { border-color: #da21ff; box-shadow: 0 0 10px rgba(218, 33, 255, 0.2); }
+        
         button { 
             background: linear-gradient(135deg, #8B5CF6, #da21ff);
-            border: none;
-            color: #fff;
-            cursor: pointer; 
-            font-weight: bold; 
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            border: none; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
         }
-        button:hover { 
-            box-shadow: 0 0 15px rgba(218, 33, 255, 0.4); 
-            transform: translateY(-1px);
-        }
+        button:hover { box-shadow: 0 0 15px rgba(218, 33, 255, 0.4); transform: translateY(-1px); }
+        .join-btn { background: linear-gradient(135deg, #2a2a35, #4a4a5a); border: 1px solid #8B5CF6; }
         
         #chat-box { 
-            height: 300px; 
-            overflow-y: auto; 
+            height: 350px; overflow-y: auto; 
             border: 1px solid rgba(255, 255, 255, 0.05); 
-            background: rgba(0,0,0,0.5);
-            padding: 15px; 
-            margin-top: 15px; 
-            border-radius: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+            background: rgba(0,0,0,0.5); padding: 15px; margin-top: 15px; border-radius: 10px;
+            display: flex; flex-direction: column; gap: 10px;
         }
         
-        .message { 
-            padding: 12px 18px; 
-            border-radius: 12px; 
-            animation: fadeIn 0.2s ease-out; 
-            max-width: 80%;
-            word-wrap: break-word;
-            font-size: 0.95em;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-        .sent { 
-            background: #8B5CF6; 
-            color: white; 
-            align-self: flex-end;
-            border-bottom-right-radius: 2px;
-        }
-        .received { 
-            background: #1e1e28; 
-            color: white; 
-            align-self: flex-start;
-            border-bottom-left-radius: 2px;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .hidden-msg { 
-            background: rgba(218, 33, 255, 0.1); 
-            color: #da21ff;
-            cursor: pointer; 
-            border: 1px dashed #da21ff;
-            text-align: center;
-            font-weight: bold;
-            user-select: none;
-        }
+        .message { padding: 12px 18px; border-radius: 12px; animation: fadeIn 0.2s ease-out; max-width: 80%; word-wrap: break-word; font-size: 0.95em; }
+        .sent { background: #8B5CF6; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .received { background: #1e1e28; color: white; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid rgba(255,255,255,0.05); }
+        .system-msg { align-self: center; background: transparent; color: #ff4444; font-size: 0.8em; padding: 5px; text-align: center; max-width: 100%; border: none;}
+        .system-msg.positive { color: #00ffcc; }
+        
+        .hidden-msg { background: rgba(218, 33, 255, 0.1); color: #da21ff; cursor: pointer; border: 1px dashed #da21ff; text-align: center; font-weight: bold; user-select: none; }
         .hidden-msg:hover { background: rgba(218, 33, 255, 0.2); }
         
-        #connection-status {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 20px;
-            background: rgba(255,255,255,0.1);
-            font-size: 0.85em;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #8B5CF6; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="box" id="setup-panel">
-        <h3>Connect to a Room</h3>
-        <p>Agree on a secret room code with your friend (e.g., "redix99"). Type it below to instantly establish a P2P bridge.</p>
-        <input type="text" id="room-input" placeholder="Enter Secret Room Code...">
-        <button onclick="joinOrCreateRoom()">Enter Room</button>
-        <div style="text-align: center;">
-            <span id="connection-status" style="color: #a0a0b0;">Status: Awaiting Code</span>
+    <div id="setup-panel">
+        <div class="box">
+            <h3>👑 Host a Group</h3>
+            <input type="text" id="host-code" placeholder="Create a custom room code...">
+            <select id="max-members">
+                <option value="2">2 Devices (1 on 1)</option>
+                <option value="3">3 Devices</option>
+                <option value="4">4 Devices</option>
+                <option value="5">5 Devices</option>
+                <option value="10">10 Devices (Max)</option>
+            </select>
+            <button onclick="hostRoom()">Create Room</button>
+        </div>
+
+        <div class="box" style="margin-top: 30px;">
+            <h3>🔗 Join a Group</h3>
+            <input type="text" id="join-code" placeholder="Enter friend's room code...">
+            <button class="join-btn" onclick="joinRoom()">Join Room</button>
         </div>
     </div>
 
-    <div class="box" id="chat-panel" style="opacity: 0.5; pointer-events: none;">
-        <h3>Secure Comm Link</h3>
-        <input type="text" id="msg-input" placeholder="Type a message to self-destruct..." onkeypress="handleKeyPress(event)">
-        <button onclick="sendMessage()">Send Encrypted</button>
+    <div class="box" id="chat-panel" style="display: none;">
+        <h3 id="room-title">Secure Comm Link</h3>
+        <p id="member-count" style="margin-top: -10px; color: #00ffcc; font-weight: bold;"></p>
+        
         <div id="chat-box"></div>
+
+        <input type="text" id="msg-input" placeholder="Type a message to self-destruct..." onkeypress="handleKeyPress(event)">
+        <button onclick="sendMessage()">Send to Group</button>
+        <button onclick="leaveRoom()" style="background: transparent; border: 1px solid #ff4444; color: #ff4444; margin-top: 15px;">Leave / Destroy Room</button>
     </div>
 
     <script>
-        // High-speed Google STUN configuration
-        const stunConfig = {
-            'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }]
-        };
+        const stunConfig = { 'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }] };
+        const APP_PREFIX = "p2p-group-"; 
 
         let peer;
-        let conn;
-        const chatBox = document.getElementById('chat-box');
-        const statusText = document.getElementById('connection-status');
-        const chatPanel = document.getElementById('chat-panel');
-        const setupPanel = document.getElementById('setup-panel');
+        let isHost = false;
         
-        // Security Prefix to ensure your room names don't clash with other developers using PeerJS
-        const APP_PREFIX = "p2p-secure-v1-"; 
+        // Host Variables
+        let maxLimit = 2;
+        let clients = []; // Array of active connections
+        
+        // Client Variables
+        let hostConnection; 
 
-        function joinOrCreateRoom() {
-            const code = document.getElementById('room-input').value.trim();
-            if (!code) return alert("Please enter a room code.");
+        const setupPanel = document.getElementById('setup-panel');
+        const chatPanel = document.getElementById('chat-panel');
+        const chatBox = document.getElementById('chat-box');
+        const memberCountText = document.getElementById('member-count');
+
+        // ==========================================
+        // 1. HOST LOGIC
+        // ==========================================
+        function hostRoom() {
+            const code = document.getElementById('host-code').value.trim();
+            maxLimit = parseInt(document.getElementById('max-members').value);
             
-            const targetRoomId = APP_PREFIX + code;
+            if (!code) return alert("Please enter a custom room code.");
             
-            statusText.innerText = "Status: Searching for room...";
-            statusText.style.color = "#da21ff";
-            
-            // 1. Create a random temporary peer to search for the room
-            peer = new Peer({ config: stunConfig, debug: 0 });
+            const roomId = APP_PREFIX + code;
+            peer = new Peer(roomId, { config: stunConfig, debug: 0 });
 
             peer.on('open', () => {
-                // 2. Try to connect to the target room
-                conn = peer.connect(targetRoomId);
+                isHost = true;
+                setupPanel.style.display = 'none';
+                chatPanel.style.display = 'block';
+                document.getElementById('room-title').innerText = "👑 Hosting Room: " + code;
+                updateMemberCount();
+                systemLog("Room created. Waiting for members...", "positive");
+            });
 
+            peer.on('error', (err) => {
+                if (err.type === 'unavailable-id') alert("This room code is already taken!");
+                else alert("Error: " + err.message);
+            });
+
+            // When someone tries to join
+            peer.on('connection', (conn) => {
+                // Check if room is full (including host as 1 member)
+                if (clients.length + 1 >= maxLimit) {
+                    conn.on('open', () => {
+                        conn.send("SYSTEM_ROOM_FULL");
+                        setTimeout(() => conn.close(), 500);
+                    });
+                    return;
+                }
+
+                // Accept connection
                 conn.on('open', () => {
-                    // Success! The other person created the room first. We are joining them.
-                    activateChatUI("Connected to Friend!");
-                    setupConnection();
+                    clients.push(conn);
+                    updateMemberCount();
+                    systemLog("A member joined the room.", "positive");
                 });
 
-                // 3. If the room doesn't exist, we get an error
-                peer.on('error', (err) => {
-                    if (err.type === 'peer-unavailable') {
-                        // The room doesn't exist. WE must create it and wait.
-                        statusText.innerText = "Status: Room Created. Waiting for friend...";
-                        statusText.style.color = "#8B5CF6";
-                        
-                        peer.destroy(); // Destroy temporary peer
-                        
-                        setTimeout(() => {
-                            // Create the permanent room host peer
-                            peer = new Peer(targetRoomId, { config: stunConfig, debug: 0 });
-                            
-                            peer.on('open', () => {
-                                console.log("Hosting room: " + code);
-                            });
+                // Listen for messages from this client
+                conn.on('data', (data) => {
+                    // Display it on host screen
+                    displayReceivedMessage(data);
+                    // Broadcast it to all OTHER clients
+                    broadcastToClients(data, conn.peer);
+                });
 
-                            peer.on('connection', (connection) => {
-                                // Friend finally joined us!
-                                conn = connection;
-                                activateChatUI("Friend Joined the Room!");
-                                setupConnection();
-                            });
-                        }, 500); // slight delay to ensure clean port switch
+                // If client leaves
+                conn.on('close', () => {
+                    clients = clients.filter(c => c.peer !== conn.peer); // Remove from list
+                    updateMemberCount();
+                    systemLog("A member left the room.", "");
+                });
+            });
+        }
+
+        function broadcastToClients(msg, senderId = null) {
+            clients.forEach(client => {
+                if (client.peer !== senderId) { // Don't send it back to the person who sent it
+                    client.send(msg);
+                }
+            });
+        }
+
+        function updateMemberCount() {
+            if (isHost) {
+                memberCountText.innerText = `Members: ${clients.length + 1} / ${maxLimit}`;
+            }
+        }
+
+        // ==========================================
+        // 2. CLIENT LOGIC
+        // ==========================================
+        function joinRoom() {
+            const code = document.getElementById('join-code').value.trim();
+            if (!code) return alert("Please enter a room code.");
+            
+            peer = new Peer({ config: stunConfig, debug: 0 }); // Random ID for client
+
+            peer.on('open', () => {
+                const targetRoomId = APP_PREFIX + code;
+                hostConnection = peer.connect(targetRoomId, { reliable: true });
+
+                hostConnection.on('open', () => {
+                    setupPanel.style.display = 'none';
+                    chatPanel.style.display = 'block';
+                    document.getElementById('room-title').innerText = "🔗 Connected to: " + code;
+                    memberCountText.innerText = "Connected to Host";
+                    systemLog("Successfully joined the room.", "positive");
+                });
+
+                hostConnection.on('data', (data) => {
+                    if (data === "SYSTEM_ROOM_FULL") {
+                        alert("Connection Refused: This room is currently full.");
+                        location.reload();
+                    } else {
+                        displayReceivedMessage(data);
                     }
                 });
+
+                // IF THE HOST LEAVES (Room disappears)
+                hostConnection.on('close', () => {
+                    alert("🚨 The Host has left. The room has been destroyed.");
+                    location.reload(); // Instantly wipe everything and reset
+                });
             });
+
+            peer.on('error', (err) => { alert("Connection failed. Make sure the Host is online."); });
         }
 
-        function setupConnection() {
-            conn.on('data', (data) => { displayReceivedMessage(data); });
-            
-            conn.on('close', () => {
-                statusText.innerText = "Status: Friend Disconnected";
-                statusText.style.color = "#ff4444";
-                chatPanel.style.opacity = '0.5';
-                chatPanel.style.pointerEvents = 'none';
-            });
-        }
-        
-        function activateChatUI(msg) {
-            statusText.innerText = "Status: " + msg;
-            statusText.style.color = "#00ffcc";
-            chatPanel.style.opacity = '1';
-            chatPanel.style.pointerEvents = 'auto';
-            setupPanel.style.display = 'none'; // Hide setup once connected
-        }
 
+        // ==========================================
+        // 3. SHARED CHAT LOGIC (Burn After Reading)
+        // ==========================================
         function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
 
         function sendMessage() {
-            if (!conn || !conn.open) return;
             const msgInput = document.getElementById('msg-input');
             const msg = msgInput.value.trim();
             if (msg === "") return;
             
-            conn.send(msg); 
+            if (isHost) {
+                if (clients.length === 0) return alert("No one is in the room yet!");
+                broadcastToClients(msg); // Send to all clients
+            } else {
+                if (!hostConnection || !hostConnection.open) return;
+                hostConnection.send(msg); // Send to host (who will broadcast it)
+            }
             
+            displaySentMessage(msg);
+            msgInput.value = ''; 
+        }
+
+        function displaySentMessage(msg) {
             const msgElement = document.createElement('div');
             msgElement.className = 'message sent';
             msgElement.innerText = msg;
             chatBox.appendChild(msgElement);
-            msgInput.value = ''; 
-
+            
             setTimeout(() => { 
                 if (document.body.contains(msgElement)) {
                     msgElement.style.opacity = '0';
@@ -253,14 +275,13 @@
                     setTimeout(() => msgElement.remove(), 300);
                 } 
             }, 3000);
-            
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         function displayReceivedMessage(msg) {
             const msgContainer = document.createElement('div');
             msgContainer.className = 'message received hidden-msg';
-            msgContainer.innerText = "🔒 Locked. Tap to decrypt.";
+            msgContainer.innerText = "🔒 Locked Group Message. Tap to decrypt.";
             
             msgContainer.onclick = function() {
                 msgContainer.innerText = msg;
@@ -270,17 +291,29 @@
                 setTimeout(() => {
                     if (document.body.contains(msgContainer)) {
                         msgContainer.style.opacity = '0';
-                        msgContainer.style.transform = 'translateY(5px)';
-                        msgContainer.style.transition = 'all 0.3s ease';
                         setTimeout(() => msgContainer.remove(), 300); 
                     }
                 }, 5000);
-                
                 msgContainer.onclick = null; 
             };
 
             chatBox.appendChild(msgContainer);
             chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function systemLog(text, typeClass) {
+            const log = document.createElement('div');
+            log.className = 'message system-msg ' + typeClass;
+            log.innerText = text;
+            chatBox.appendChild(log);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function leaveRoom() {
+            // Destroys the peer connection entirely. 
+            // If Host: Kicks everyone. If Client: Just leaves quietly.
+            if(peer) peer.destroy();
+            location.reload(); 
         }
     </script>
 </body>
