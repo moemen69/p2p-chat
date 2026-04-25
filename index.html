@@ -2,245 +2,357 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure P2P Group Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEXUS // ENCRYPTED_LINK</title>
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
     <style>
-        /* Premium Dark Mode & Glassmorphism UI */
+        /* Encrypted Terminal / Binary Aesthetic */
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
         body { 
-            font-family: 'Inter', system-ui, sans-serif; 
-            background: #050510; 
-            color: #e0e0e0; 
+            font-family: 'Share Tech Mono', 'Courier New', monospace; 
+            background-color: #030303; 
+            color: #00ff41; /* Classic Matrix Green */
             padding: 20px; 
             max-width: 600px; 
             margin: 0 auto; 
-            background-image: radial-gradient(circle at 50% -20%, rgba(139, 92, 246, 0.15), transparent 60%);
+            /* Anti-Screenshot CSS for 1-on-1 mode */
+            user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+            overflow-x: hidden;
         }
+
+        /* Subtle background binary rain effect */
+        body::before {
+            content: "01001110 01000101 01011000 01010101 01010011";
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            color: rgba(0, 255, 65, 0.03); font-size: 2rem; z-index: -1;
+            word-wrap: break-word; overflow: hidden; pointer-events: none;
+        }
+
         .box { 
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08); 
-            padding: 20px; 
-            margin-bottom: 20px; 
-            border-radius: 16px;
-            backdrop-filter: blur(12px);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            background: #000; 
+            border: 1px solid #00ff41; 
+            padding: 20px; margin-bottom: 20px; 
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2); 
+            position: relative;
         }
-        h3 { margin-top: 0; color: #8B5CF6; font-weight: 600; border-bottom: 1px solid rgba(139, 92, 246, 0.3); padding-bottom: 10px;}
-        p { color: #a0a0b0; font-size: 0.9em; line-height: 1.4; }
         
-        input, select, button { 
-            background: rgba(0, 0, 0, 0.4); 
-            color: #fff; 
-            border: 1px solid #8B5CF6; 
-            padding: 12px; 
-            margin: 8px 0; 
-            width: 100%; 
-            box-sizing: border-box; 
-            border-radius: 8px; 
-            outline: none;
-            transition: all 0.3s ease;
+        /* Terminal scanline effect */
+        .box::after {
+            content: " "; display: block; position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none;
         }
-        input:focus, select:focus { border-color: #da21ff; box-shadow: 0 0 10px rgba(218, 33, 255, 0.2); }
+
+        h2, h3 { margin-top: 0; font-weight: normal; text-transform: uppercase; letter-spacing: 2px; }
+        h2::before, h3::before { content: "> "; }
+        p { color: #008f11; font-size: 0.9em; line-height: 1.4; margin-top: 0; }
+        
+        input, select { 
+            background: #000; color: #00ff41; border: 1px dashed #008f11; 
+            padding: 14px; margin: 8px 0; width: 100%; box-sizing: border-box; 
+            outline: none; font-size: 1em; font-family: 'Share Tech Mono', monospace;
+        }
+        input:focus, select:focus { border: 1px solid #00ff41; box-shadow: inset 0 0 5px rgba(0,255,65,0.5); }
+        input::placeholder { color: #004d00; }
         
         button { 
-            background: linear-gradient(135deg, #8B5CF6, #da21ff);
-            border: none; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+            background: #000; color: #00ff41; border: 1px solid #00ff41; 
+            padding: 14px; margin: 8px 0; width: 100%; font-weight: bold; 
+            text-transform: uppercase; letter-spacing: 2px; cursor: pointer;
+            font-family: 'Share Tech Mono', monospace; transition: all 0.1s;
         }
-        button:hover { box-shadow: 0 0 15px rgba(218, 33, 255, 0.4); transform: translateY(-1px); }
-        .join-btn { background: linear-gradient(135deg, #2a2a35, #4a4a5a); border: 1px solid #8B5CF6; }
+        button:hover { background: #00ff41; color: #000; }
+        button:disabled { filter: grayscale(1); cursor: not-allowed; opacity: 0.5; }
+        .btn-secondary { border: 1px dashed #008f11; color: #008f11; }
+        .btn-secondary:hover { background: #008f11; color: #000; }
         
         #chat-box { 
-            height: 350px; overflow-y: auto; 
-            border: 1px solid rgba(255, 255, 255, 0.05); 
-            background: rgba(0,0,0,0.5); padding: 15px; margin-top: 15px; border-radius: 10px;
-            display: flex; flex-direction: column; gap: 10px;
+            height: 350px; overflow-y: auto; border: 1px solid #008f11; 
+            background: #000; padding: 15px; margin-top: 15px; 
+            display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth;
         }
         
-        .message { padding: 12px 18px; border-radius: 12px; animation: fadeIn 0.2s ease-out; max-width: 80%; word-wrap: break-word; font-size: 0.95em; }
-        .sent { background: #8B5CF6; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .received { background: #1e1e28; color: white; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid rgba(255,255,255,0.05); }
-        .system-msg { align-self: center; background: transparent; color: #ff4444; font-size: 0.8em; padding: 5px; text-align: center; max-width: 100%; border: none;}
-        .system-msg.positive { color: #00ffcc; }
+        .message { padding: 10px 15px; max-width: 85%; word-wrap: break-word; font-size: 0.95em; border-radius: 0; }
+        .sent { background: #000; color: #00ff41; border-left: 3px solid #00ff41; align-self: flex-end; text-align: right; border-right: 1px dashed #008f11; }
+        .received { background: #000; color: #00ff41; border-right: 3px solid #ff004c; border-left: 1px dashed #ff004c; align-self: flex-start; cursor: pointer; }
         
-        .hidden-msg { background: rgba(218, 33, 255, 0.1); color: #da21ff; cursor: pointer; border: 1px dashed #da21ff; text-align: center; font-weight: bold; user-select: none; }
-        .hidden-msg:hover { background: rgba(218, 33, 255, 0.2); }
+        /* Binary Locked Message Styles */
+        .binary-locked { color: #ff004c; text-shadow: 0 0 5px rgba(255,0,76,0.5); letter-spacing: 1px; }
+        .revealed-text { color: #00ff41; text-shadow: 0 0 5px rgba(0,255,65,0.5); }
         
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #8B5CF6; border-radius: 10px; }
+        .system-msg { align-self: center; background: transparent; color: #ff004c; font-size: 0.8em; padding: 5px; text-align: center; border: none;}
+        .system-msg.positive { color: #00ff41; }
+        
+        .hidden { display: none; }
+        .ban-alert { background: #000; border: 1px dashed #ff004c; color: #ff004c; padding: 15px; text-align: center; font-weight: bold; margin-top: 10px; text-transform: uppercase; }
+        
+        /* Terminal Glitch Animation */
+        .glitch { animation: glitch 0.2s linear infinite; }
+        @keyframes glitch {
+            0% { opacity: 1; transform: translate(0); }
+            20% { opacity: 0.8; transform: translate(-2px, 1px); }
+            40% { opacity: 0.9; transform: translate(-1px, -1px); }
+            60% { opacity: 1; transform: translate(2px, 1px); }
+            80% { opacity: 0.8; transform: translate(1px, -1px); }
+            100% { opacity: 1; transform: translate(0); }
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #00ff41; }
+        ::-webkit-scrollbar-track { background: #000; }
     </style>
 </head>
 <body>
 
-    <div id="setup-panel">
-        <div class="box">
-            <h3>👑 Host a Group</h3>
-            <input type="text" id="host-code" placeholder="Create a custom room code...">
-            <select id="max-members">
-                <option value="2">2 Devices (1 on 1)</option>
-                <option value="3">3 Devices</option>
-                <option value="4">4 Devices</option>
-                <option value="5">5 Devices</option>
-                <option value="10">10 Devices (Max)</option>
-            </select>
-            <button onclick="hostRoom()">Create Room</button>
-        </div>
-
-        <div class="box" style="margin-top: 30px;">
-            <h3>🔗 Join a Group</h3>
-            <input type="text" id="join-code" placeholder="Enter friend's room code...">
-            <button class="join-btn" onclick="joinRoom()">Join Room</button>
-        </div>
+    <div id="app-banned-screen" class="box hidden" style="border-color: #ff004c; text-align: center; margin-top: 20vh; box-shadow: 0 0 20px rgba(255,0,76,0.4);">
+        <h2 style="color: #ff004c; text-shadow: 0 0 10px #ff004c;" class="glitch">FATAL_ERROR: BLOCKED</h2>
+        <p style="color: #ff004c;">DEVICE IDENTITY LOGGED. ACCESS PERMANENTLY REVOKED.</p>
     </div>
 
-    <div class="box" id="chat-panel" style="display: none;">
-        <h3 id="room-title">Secure Comm Link</h3>
-        <p id="member-count" style="margin-top: -10px; color: #00ffcc; font-weight: bold;"></p>
-        
-        <div id="chat-box"></div>
+    <div id="app-container">
+        <div id="main-hub" class="box">
+            <h2 style="text-align: center; font-size: 2em; margin-bottom: 5px; letter-spacing: 4px;">NEXUS_OS</h2>
+            <p style="text-align: center; margin-top: 0;">SELECT ENCRYPTION PROTOCOL</p>
+            
+            <button onclick="showPanel('p2p-setup')" style="margin-top: 20px;">[ INIT GHOST_PROTOCOL ]</button>
+            <button class="btn-secondary" onclick="showPanel('group-setup')">[ INIT MULTI_NODE ]</button>
+        </div>
 
-        <input type="text" id="msg-input" placeholder="Type a message to self-destruct..." onkeypress="handleKeyPress(event)">
-        <button onclick="sendMessage()">Send to Group</button>
-        <button onclick="leaveRoom()" style="background: transparent; border: 1px solid #ff4444; color: #ff4444; margin-top: 15px;">Leave / Destroy Room</button>
+        <div id="p2p-setup" class="hidden">
+            <button onclick="location.reload()" class="btn-secondary" style="width: auto; padding: 5px 10px; font-size: 0.8em;">< ABORT</button>
+            <div class="box" style="margin-top: 15px;">
+                <h3>LOCAL_NODE_ID</h3>
+                <strong id="my-id" style="color: #00ff41; letter-spacing: 2px; font-size: 1.1em; word-break: break-all;">GENERATING...</strong>
+                <button class="btn-secondary" onclick="copyMyId()" style="margin-top: 15px;">[ COPY TO CLIPBOARD ]</button>
+            </div>
+            <div class="box">
+                <h3>TARGET_NODE_ID</h3>
+                <input type="text" id="target-id" placeholder="ENTER TARGET HASH...">
+                <button onclick="connectToTarget()">[ ESTABLISH UPLINK ]</button>
+                <p id="p2p-status" style="text-align: center; color: #008f11; margin-top: 10px;">STATUS: OFFLINE</p>
+            </div>
+        </div>
+
+        <div id="group-setup" class="hidden">
+            <button onclick="location.reload()" class="btn-secondary" style="width: auto; padding: 5px 10px; font-size: 0.8em;">< ABORT</button>
+            
+            <div class="box" style="margin-top: 15px; border-color: #ff004c;">
+                <h3 style="color: #ff004c;">CREATE_NODE (ROOT_ACCESS)</h3>
+                
+                <div id="phone-auth-section">
+                    <p style="font-size: 0.8em;">VERIFY CELLULAR COMM-LINK.</p>
+                    <input type="text" id="phone-number" placeholder="INPUT PHONE NUMBER...">
+                    <button onclick="requestPasskey()" class="btn-secondary" style="border-color: #ff004c; color: #ff004c;">[ SEND SMS PASSKEY ]</button>
+                </div>
+                
+                <div id="ban-message" class="ban-alert hidden"></div>
+
+                <div id="admin-gateway" class="hidden" style="margin-top: 15px; border-top: 1px dashed #ff004c; padding-top: 15px;">
+                    <input type="password" id="admin-passkey" placeholder="INPUT ROOT PASSKEY...">
+                    <input type="text" id="host-code" placeholder="ASSIGN NODE ALIAS (ex: alpha99)...">
+                    <select id="max-members">
+                        <option value="3">LIMIT: 3 NODES</option>
+                        <option value="5">LIMIT: 5 NODES</option>
+                        <option value="10">LIMIT: 10 NODES (MAX)</option>
+                    </select>
+                    <button onclick="hostGroup()" style="background: #ff004c; color: #000; border-color: #ff004c;">[ SPAWN ENCRYPTED NODE ]</button>
+                </div>
+            </div>
+
+            <div class="box">
+                <h3>JOIN_NODE</h3>
+                <input type="text" id="join-code" placeholder="ENTER NODE ALIAS...">
+                <button class="btn-secondary" onclick="joinGroup()">[ CONNECT TO NODE ]</button>
+            </div>
+        </div>
+
+        <div id="chat-panel" class="box hidden">
+            <h3 id="room-title">SECURE_UPLINK</h3>
+            <p id="room-subtitle" style="font-size: 0.8em; color: #008f11; margin-top: -10px;"></p>
+            <div id="chat-box"></div>
+            <input type="text" id="msg-input" placeholder="> TYPE SECURE COMMAND..." onkeypress="handleKeyPress(event)" style="user-select: text; -webkit-user-select: text;">
+            <button onclick="sendMessage()">[ TRANSMIT ]</button>
+            <button onclick="location.reload()" style="background: transparent; border: 1px dashed #ff004c; color: #ff004c; margin-top: 15px;">[ BURN LOGS & DISCONNECT ]</button>
+        </div>
     </div>
 
     <script>
-        const stunConfig = { 'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }] };
-        const APP_PREFIX = "p2p-group-"; 
+        const STUN_CONFIG = { 'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }] };
+        const GROUP_PREFIX = "nexus-grp-"; 
 
-        let peer;
-        let isHost = false;
-        
-        // Host Variables
-        let maxLimit = 2;
-        let clients = []; // Array of active connections
-        
-        // Client Variables
-        let hostConnection; 
+        let peer, conn, groupClients = [];
+        let currentMode = ""; 
+        let myCurrentId = "";
 
-        const setupPanel = document.getElementById('setup-panel');
-        const chatPanel = document.getElementById('chat-panel');
         const chatBox = document.getElementById('chat-box');
-        const memberCountText = document.getElementById('member-count');
 
         // ==========================================
-        // 1. HOST LOGIC
+        // SECURITY GATEWAY
         // ==========================================
-        function hostRoom() {
-            const code = document.getElementById('host-code').value.trim();
-            maxLimit = parseInt(document.getElementById('max-members').value);
+        const CORRECT_PASSKEY = "xjx01";
+        const BAN_DURATION_MS = 30 * 24 * 60 * 60 * 1000; 
+        let currentPhone = "";
+
+        window.onload = () => {
+            if (localStorage.getItem("app_permanently_blocked") === "true") {
+                document.getElementById("app-container").style.display = "none";
+                document.getElementById("app-banned-screen").classList.remove("hidden");
+            }
+        };
+
+        function requestPasskey() {
+            currentPhone = document.getElementById('phone-number').value.trim();
+            if (!currentPhone) return alert("ERR: NO_DATA_PROVIDED");
+
+            let phoneData = JSON.parse(localStorage.getItem(currentPhone)) || { strikes: 0, banExpiry: 0, totalBans: 0 };
+
+            if (Date.now() < phoneData.banExpiry) {
+                const daysLeft = Math.ceil((phoneData.banExpiry - Date.now()) / (1000 * 60 * 60 * 24));
+                showBanError(`ACCESS DENIED. TRY AGAIN IN ${daysLeft} DAYS.`);
+                return;
+            }
+
+            document.getElementById('ban-message').classList.add('hidden');
+            document.getElementById('phone-auth-section').classList.add('hidden');
+            document.getElementById('admin-gateway').classList.remove('hidden');
             
-            if (!code) return alert("Please enter a custom room code.");
-            
-            const roomId = APP_PREFIX + code;
-            peer = new Peer(roomId, { config: stunConfig, debug: 0 });
-
-            peer.on('open', () => {
-                isHost = true;
-                setupPanel.style.display = 'none';
-                chatPanel.style.display = 'block';
-                document.getElementById('room-title').innerText = "👑 Hosting Room: " + code;
-                updateMemberCount();
-                systemLog("Room created. Waiting for members...", "positive");
-            });
-
-            peer.on('error', (err) => {
-                if (err.type === 'unavailable-id') alert("This room code is already taken!");
-                else alert("Error: " + err.message);
-            });
-
-            // When someone tries to join
-            peer.on('connection', (conn) => {
-                // Check if room is full (including host as 1 member)
-                if (clients.length + 1 >= maxLimit) {
-                    conn.on('open', () => {
-                        conn.send("SYSTEM_ROOM_FULL");
-                        setTimeout(() => conn.close(), 500);
-                    });
-                    return;
-                }
-
-                // Accept connection
-                conn.on('open', () => {
-                    clients.push(conn);
-                    updateMemberCount();
-                    systemLog("A member joined the room.", "positive");
-                });
-
-                // Listen for messages from this client
-                conn.on('data', (data) => {
-                    // Display it on host screen
-                    displayReceivedMessage(data);
-                    // Broadcast it to all OTHER clients
-                    broadcastToClients(data, conn.peer);
-                });
-
-                // If client leaves
-                conn.on('close', () => {
-                    clients = clients.filter(c => c.peer !== conn.peer); // Remove from list
-                    updateMemberCount();
-                    systemLog("A member left the room.", "");
-                });
-            });
+            alert(`[INTERCEPTED SMS TO ${currentPhone}]\nROOT_PASSKEY: ${CORRECT_PASSKEY}`);
         }
 
-        function broadcastToClients(msg, senderId = null) {
-            clients.forEach(client => {
-                if (client.peer !== senderId) { // Don't send it back to the person who sent it
-                    client.send(msg);
-                }
-            });
-        }
+        function handleFailedAttempt() {
+            let phoneData = JSON.parse(localStorage.getItem(currentPhone)) || { strikes: 0, banExpiry: 0, totalBans: 0 };
+            phoneData.strikes++;
 
-        function updateMemberCount() {
-            if (isHost) {
-                memberCountText.innerText = `Members: ${clients.length + 1} / ${maxLimit}`;
+            if (phoneData.strikes >= 3) {
+                phoneData.strikes = 0; phoneData.totalBans++; phoneData.banExpiry = Date.now() + BAN_DURATION_MS;
+                if (phoneData.totalBans >= 3) {
+                    localStorage.setItem("app_permanently_blocked", "true"); location.reload(); return;
+                }
+                localStorage.setItem(currentPhone, JSON.stringify(phoneData));
+                document.getElementById('admin-gateway').classList.add('hidden');
+                document.getElementById('phone-auth-section').classList.remove('hidden');
+                showBanError("MAXIMUM ATTEMPTS REACHED. IDENTITY BANNED FOR 30 DAYS.");
+            } else {
+                localStorage.setItem(currentPhone, JSON.stringify(phoneData));
+                // Silent Warning
+                alert("ERR: ROOT_PASSKEY_INVALID.");
             }
         }
 
-        // ==========================================
-        // 2. CLIENT LOGIC
-        // ==========================================
-        function joinRoom() {
-            const code = document.getElementById('join-code').value.trim();
-            if (!code) return alert("Please enter a room code.");
-            
-            peer = new Peer({ config: stunConfig, debug: 0 }); // Random ID for client
-
-            peer.on('open', () => {
-                const targetRoomId = APP_PREFIX + code;
-                hostConnection = peer.connect(targetRoomId, { reliable: true });
-
-                hostConnection.on('open', () => {
-                    setupPanel.style.display = 'none';
-                    chatPanel.style.display = 'block';
-                    document.getElementById('room-title').innerText = "🔗 Connected to: " + code;
-                    memberCountText.innerText = "Connected to Host";
-                    systemLog("Successfully joined the room.", "positive");
-                });
-
-                hostConnection.on('data', (data) => {
-                    if (data === "SYSTEM_ROOM_FULL") {
-                        alert("Connection Refused: This room is currently full.");
-                        location.reload();
-                    } else {
-                        displayReceivedMessage(data);
-                    }
-                });
-
-                // IF THE HOST LEAVES (Room disappears)
-                hostConnection.on('close', () => {
-                    alert("🚨 The Host has left. The room has been destroyed.");
-                    location.reload(); // Instantly wipe everything and reset
-                });
-            });
-
-            peer.on('error', (err) => { alert("Connection failed. Make sure the Host is online."); });
+        function showBanError(msg) {
+            const banEl = document.getElementById('ban-message');
+            banEl.innerText = msg; banEl.classList.remove('hidden');
         }
 
+        function hostGroup() {
+            const passkey = document.getElementById('admin-passkey').value;
+            const code = document.getElementById('host-code').value.trim();
+            const maxLimit = parseInt(document.getElementById('max-members').value);
+            
+            if (passkey !== CORRECT_PASSKEY) { handleFailedAttempt(); return; }
+            if (!code) return alert("ERR: NO_ALIAS_PROVIDED");
+
+            let phoneData = JSON.parse(localStorage.getItem(currentPhone));
+            phoneData.strikes = 0; localStorage.setItem(currentPhone, JSON.stringify(phoneData));
+
+            currentMode = 'group-host';
+            peer = new Peer(GROUP_PREFIX + code, { config: STUN_CONFIG, debug: 0 });
+
+            peer.on('open', () => {
+                activateChatUI("NODE_ALIAS: " + code, `MAX_CAPACITY: ${maxLimit}`);
+                systemLog("ROOT NODE ESTABLISHED. AWAITING CONNECTIONS...", "positive");
+            });
+
+            peer.on('error', () => alert("ERR: ALIAS_TAKEN_OR_NETWORK_FAIL"));
+
+            peer.on('connection', (incomingConn) => {
+                if (groupClients.length + 1 >= maxLimit) {
+                    incomingConn.on('open', () => { incomingConn.send("SYSTEM_ROOM_FULL"); setTimeout(() => incomingConn.close(), 500); });
+                    return;
+                }
+                incomingConn.on('open', () => { groupClients.push(incomingConn); systemLog("GUEST_NODE ATTACHED.", "positive"); });
+                incomingConn.on('data', (data) => {
+                    displayEncryptedMessage(data); 
+                    groupClients.forEach(c => { if (c.peer !== incomingConn.peer) c.send(data); });
+                });
+                incomingConn.on('close', () => {
+                    groupClients = groupClients.filter(c => c.peer !== incomingConn.peer); systemLog("GUEST_NODE SEVERED.", "");
+                });
+            });
+        }
 
         // ==========================================
-        // 3. SHARED CHAT LOGIC (Burn After Reading)
+        // UI & P2P ROUTING
+        // ==========================================
+        function showPanel(panelId) {
+            document.getElementById('main-hub').classList.add('hidden');
+            document.getElementById(panelId).classList.remove('hidden');
+            if (panelId === 'p2p-setup') { currentMode = '1on1'; initP2P(); }
+        }
+
+        function activateChatUI(title, subtitle) {
+            document.getElementById('p2p-setup').classList.add('hidden');
+            document.getElementById('group-setup').classList.add('hidden');
+            document.getElementById('chat-panel').classList.remove('hidden');
+            document.getElementById('room-title').innerText = title;
+            document.getElementById('room-subtitle').innerText = subtitle;
+        }
+
+        function initP2P() {
+            peer = new Peer({ config: STUN_CONFIG, debug: 0 });
+            peer.on('open', (id) => { myCurrentId = id; document.getElementById('my-id').innerText = id; });
+            peer.on('connection', (incomingConnection) => {
+                if (conn && conn.open) {
+                    incomingConnection.on('open', () => { incomingConnection.send("SYSTEM_BUSY"); setTimeout(() => incomingConnection.close(), 500); }); return;
+                }
+                conn = incomingConnection; setupP2PFlow();
+            });
+        }
+
+        function copyMyId() { navigator.clipboard.writeText(myCurrentId).then(() => alert("HASH COPIED.")); }
+
+        function connectToTarget() {
+            const targetId = document.getElementById('target-id').value.trim();
+            if (!targetId) return;
+            document.getElementById('p2p-status').innerText = "STATUS: NEGOTIATING HANDSHAKE...";
+            conn = peer.connect(targetId, { reliable: true });
+            setupP2PFlow();
+        }
+
+        function setupP2PFlow() {
+            conn.on('open', () => {
+                activateChatUI("GHOST_PROTOCOL_ACTIVE", "WARNING: HOLD COMMAND TO DECRYPT STREAM.");
+                systemLog("END-TO-END UPLINK SECURED.", "positive");
+            });
+            conn.on('data', (data) => {
+                if(data === "SYSTEM_BUSY") { alert("TARGET_NODE_ENGAGED."); location.reload(); } 
+                else { displayEncryptedMessage(data, true); } // True triggers hold-to-read
+            });
+            conn.on('close', () => { alert("UPLINK_SEVERED."); location.reload(); });
+        }
+
+        function joinGroup() {
+            const code = document.getElementById('join-code').value.trim();
+            if (!code) return;
+            currentMode = 'group-client';
+            peer = new Peer({ config: STUN_CONFIG, debug: 0 });
+            peer.on('open', () => {
+                conn = peer.connect(GROUP_PREFIX + code, { reliable: true });
+                conn.on('open', () => {
+                    activateChatUI("GUEST_NODE_ACTIVE", "CONNECTED TO ROOT."); systemLog("HANDSHAKE SUCCESSFUL.", "positive");
+                });
+                conn.on('data', (data) => {
+                    if (data === "SYSTEM_ROOM_FULL") { alert("ERR: NODE_AT_CAPACITY."); location.reload(); } 
+                    else { displayEncryptedMessage(data, false); } // False triggers tap-to-read
+                });
+                conn.on('close', () => { alert("ROOT_NODE_OFFLINE."); location.reload(); });
+            });
+        }
+
+        // ==========================================
+        // TRANSMISSION & BINARY ANIMATION LOGIC
         // ==========================================
         function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
 
@@ -249,71 +361,108 @@
             const msg = msgInput.value.trim();
             if (msg === "") return;
             
-            if (isHost) {
-                if (clients.length === 0) return alert("No one is in the room yet!");
-                broadcastToClients(msg); // Send to all clients
-            } else {
-                if (!hostConnection || !hostConnection.open) return;
-                hostConnection.send(msg); // Send to host (who will broadcast it)
+            if (currentMode === '1on1' || currentMode === 'group-client') {
+                if (!conn || !conn.open) return; conn.send(msg);
+            } else if (currentMode === 'group-host') {
+                if (groupClients.length === 0) return alert("ERR: NO_GUESTS_ATTACHED");
+                groupClients.forEach(client => client.send(msg));
             }
-            
-            displaySentMessage(msg);
-            msgInput.value = ''; 
+            displaySentMessage(msg); msgInput.value = ''; 
         }
 
         function displaySentMessage(msg) {
-            const msgElement = document.createElement('div');
-            msgElement.className = 'message sent';
-            msgElement.innerText = msg;
+            const msgElement = document.createElement('div'); msgElement.className = 'message sent'; msgElement.innerText = "OUT: " + msg;
             chatBox.appendChild(msgElement);
-            
             setTimeout(() => { 
-                if (document.body.contains(msgElement)) {
-                    msgElement.style.opacity = '0';
-                    msgElement.style.transform = 'translateY(5px)';
-                    msgElement.style.transition = 'all 0.3s ease';
-                    setTimeout(() => msgElement.remove(), 300);
-                } 
+                if (document.body.contains(msgElement)) { msgElement.style.opacity = '0'; setTimeout(() => msgElement.remove(), 300); } 
             }, 3000);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        function displayReceivedMessage(msg) {
-            const msgContainer = document.createElement('div');
-            msgContainer.className = 'message received hidden-msg';
-            msgContainer.innerText = "🔒 Locked Group Message. Tap to decrypt.";
+        // --- BINARY DECODER ENGINE ---
+        function generateBinaryString(length) {
+            let result = '';
+            for(let i=0; i<length; i++) result += Math.floor(Math.random() * 2);
+            return result;
+        }
+
+        // The unified decryption function handles both Ghost (Hold) and Group (Tap) logic
+        function displayEncryptedMessage(realMsg, requiresHold = false) {
+            const msgContainer = document.createElement('div'); 
+            msgContainer.className = 'message received binary-locked'; 
             
-            msgContainer.onclick = function() {
-                msgContainer.innerText = msg;
-                msgContainer.classList.remove('hidden-msg');
-                msgContainer.style.cursor = 'default';
+            // Initial state: Pure random binary same length as actual message
+            const rawLength = realMsg.length < 15 ? 15 : realMsg.length;
+            msgContainer.innerText = generateBinaryString(rawLength);
+            
+            let selfDestructStarted = false;
+            let decodeInterval;
+
+            const triggerDecryption = (e) => {
+                if(e) e.preventDefault(); 
+                if(msgContainer.classList.contains('revealed-text')) return; // Already decoding
                 
-                setTimeout(() => {
-                    if (document.body.contains(msgContainer)) {
-                        msgContainer.style.opacity = '0';
-                        setTimeout(() => msgContainer.remove(), 300); 
-                    }
-                }, 5000);
-                msgContainer.onclick = null; 
+                msgContainer.classList.remove('binary-locked'); 
+                msgContainer.classList.add('revealed-text');
+                
+                // Binary Scramble Animation
+                let iterations = 0;
+                const chars = "01$#*@%";
+                clearInterval(decodeInterval);
+                
+                decodeInterval = setInterval(() => {
+                    msgContainer.innerText = "IN: " + realMsg.split("").map((letter, index) => {
+                        if(index < iterations) return realMsg[index];
+                        return chars[Math.floor(Math.random() * chars.length)];
+                    }).join("");
+                    
+                    if(iterations >= realMsg.length) clearInterval(decodeInterval);
+                    iterations += 1; // Speed of decode
+                }, 30);
+
+                // Start Burn Timer
+                if (!selfDestructStarted) {
+                    selfDestructStarted = true;
+                    setTimeout(() => { 
+                        if (document.body.contains(msgContainer)) { 
+                            msgContainer.style.opacity = '0'; setTimeout(() => msgContainer.remove(), 300); 
+                        } 
+                    }, requiresHold ? 4000 : 5000); // 4s for hold, 5s for tap
+                }
             };
 
-            chatBox.appendChild(msgContainer);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            const hideText = (e) => { 
+                if(e) e.preventDefault(); 
+                clearInterval(decodeInterval); // Stop decoding
+                msgContainer.classList.add('binary-locked'); 
+                msgContainer.classList.remove('revealed-text'); 
+                msgContainer.innerText = generateBinaryString(rawLength);
+            };
+
+            // Apply interaction logic based on mode
+            if(requiresHold) {
+                // Ghost Protocol: Must Hold
+                msgContainer.addEventListener('mousedown', triggerDecryption); 
+                msgContainer.addEventListener('mouseup', hideText); 
+                msgContainer.addEventListener('mouseleave', hideText);
+                msgContainer.addEventListener('touchstart', triggerDecryption, {passive: false}); 
+                msgContainer.addEventListener('touchend', hideText, {passive: false}); 
+                msgContainer.addEventListener('touchcancel', hideText, {passive: false});
+            } else {
+                // Group Protocol: Just Tap Once
+                msgContainer.onclick = function() {
+                    triggerDecryption();
+                    msgContainer.onclick = null; // Remove listener after clicked
+                    msgContainer.style.cursor = 'default';
+                }
+            }
+            
+            chatBox.appendChild(msgContainer); chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         function systemLog(text, typeClass) {
-            const log = document.createElement('div');
-            log.className = 'message system-msg ' + typeClass;
-            log.innerText = text;
-            chatBox.appendChild(log);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        function leaveRoom() {
-            // Destroys the peer connection entirely. 
-            // If Host: Kicks everyone. If Client: Just leaves quietly.
-            if(peer) peer.destroy();
-            location.reload(); 
+            const log = document.createElement('div'); log.className = 'system-msg ' + typeClass; log.innerText = text;
+            chatBox.appendChild(log); chatBox.scrollTop = chatBox.scrollHeight;
         }
     </script>
 </body>
